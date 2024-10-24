@@ -3,33 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Example</title>
+    <title>WebSocket Live Audio Connection</title>
 </head>
 <body>
-    <h1>WebSocket Test</h1>
-    <input id="message" type="text" placeholder="Type a message">
-    <button onclick="sendMessage()">Send</button>
+    <h1>WebSocket Audio Test</h1>
+    <button onclick="startRecording()">Start Recording</button>
+    <button onclick="stopRecording()">Stop Recording</button>
 
-    <ul id="messages"></ul>
+    <audio id="audioPlayback" controls></audio>
 
-    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.0/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.0/socket.io.js"></script>
     <script type="text/javascript">
-        var socket = io.connect('http://' + document.domain + ':' + location.port);
-
-        socket.on('connect', function() {
-            console.log("Connected to WebSocket!");
-        });
-
-        socket.on('message', function(msg) {
-            var li = document.createElement("li");
-            li.appendChild(document.createTextNode(msg));
-            document.getElementById("messages").appendChild(li);
-        });
-
-        function sendMessage() {
-            var message = document.getElementById("message").value;
-            socket.send(message);
+        let mediaRecorder;
+        let audioChunks = [];
+        let socket = io.connect('http://localhost:5000');  // Use your server's public IP
+        
+        // Clear the previous audio and reset the buffer
+        function clearAudioPlayback() {
+            const audioElement = document.getElementById('audioPlayback');
+            if (audioElement.src) {
+                URL.revokeObjectURL(audioElement.src);  // Revoke any previously set Blob URL
+            }
+            audioElement.src = '';  // Clear the audio source
         }
+
+        // Start capturing audio from the mic and send it to the server
+        function startRecording() {
+            clearAudioPlayback();  // Clear old audio before starting a new recording
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    mediaRecorder = new MediaRecorder(stream, {
+                            mimeType: 'audio/webm; codecs=opus',
+                            audioBitsPerSecond: 192000  // Set a higher bitrate for better quality audio
+                        });
+
+                    audioChunks = [];  // Reset the audioChunks array for the new recording
+
+                    mediaRecorder.ondataavailable = function(event) {
+                        if (event.data.size > 0) {
+                            audioChunks.push(event.data);  // Store each chunk locally
+                            socket.emit('audio_chunk', event.data);  // Send each audio chunk to the server
+                        }
+                    };
+
+                    mediaRecorder.start(250);  // Capture audio chunks every 250ms
+                })
+                .catch(error => {
+                    console.error("Error accessing microphone: ", error);
+                });
+
+            // Notify the server that recording has started (if needed)
+            socket.emit('start_recording');
+        }
+
+        // Stop capturing audio and notify the server
+        function stopRecording() {
+            mediaRecorder.stop();
+            socket.emit('audio_stop');  // Notify server that recording has stopped
+        }
+
+        // Play back the full audio received from the server
+        socket.on('playAudio', function(audioBlob) {
+            const audioElement = document.getElementById('audioPlayback');
+            const blob = new Blob([audioBlob], { type: 'audio/webm; codecs=opus' });  // Create a Blob from the received data
+
+            // Revoke the previous audio URL to release memory, if it exists
+            if (audioElement.src) {
+                URL.revokeObjectURL(audioElement.src);
+            }
+
+            // Create a new Blob URL and assign it to the audio element
+            const audioUrl = URL.createObjectURL(blob);
+            audioElement.src = audioUrl;
+            audioElement.play();
+        });
     </script>
 </body>
 </html>
