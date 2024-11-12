@@ -10,14 +10,14 @@ class MemDB():
     __self__init(self):
 
     self.database = connection
-    function store_message(self, message, user):
+    def store_message(self, message, user):
         """
         Store message in the postgres pgvector for later
         
         """
         self.database.store()
         return
-    function retrieve_message_context(self, message, user):
+    def retrieve_message_context(self, message, user):
         """
         Use the message to get message context for incontext prompting using the most similar messages to help the model
         """
