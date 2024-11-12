@@ -1,4 +1,5 @@
 from vllm import LLM, SamplingParams
+import fastchat
 
 class LLM:
     #constructor

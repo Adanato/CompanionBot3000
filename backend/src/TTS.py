@@ -1,11 +1,13 @@
-# Init TTS with the target model name
-tts = TTS(model_name="tts_models/de/thorsten/tacotron2-DDC", progress_bar=False).to(device)
+import torch
+from TTS.api import TTS
 
-# Run TTS
-tts.tts_to_file(text="Ich bin eine Testnachricht.", file_path=OUTPUT_PATH)
+class TextToSpeech:
+    def __init__(self, model="tts_models/multilingual/multi-dataset/xtts_v2"):
+        # Get device
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        # Init TTS
+        self.tts = TTS(model).to(device)
 
-# Example voice cloning with YourTTS in English, French and Portuguese
-tts = TTS(model_name="tts_models/multilingual/multi-dataset/your_tts", progress_bar=False).to(device)
-tts.tts_to_file("This is voice cloning.", speaker_wav="my/cloning/audio.wav", language="en", file_path="output.wav")
-tts.tts_to_file("C'est le clonage de la voix.", speaker_wav="my/cloning/audio.wav", language="fr-fr", file_path="output.wav")
-tts.tts_to_file("Isso é clonagem de voz.", speaker_wav="my/cloning/audio.wav", language="pt-br", file_path="output.wav")
+    def convertToSpeech(self, text):
+        #returns audio or file location
+        return self.tts.tts(text="Hello world!", speaker_wav="my/cloning/audio.wav", language="en")

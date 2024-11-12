@@ -3,6 +3,7 @@ from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from io import BytesIO
 from LLM import LLM
+
 # Custom classes
 
 app = Flask(__name__)
@@ -15,7 +16,6 @@ audio_buffer = BytesIO()
 #start model
 llm = LLM(model="meta-llama/Llama-3.1-8B")
 
-
 @socketio.on('audio_chunk')
 def handle_audio_chunk(audio_data):
     # Store audio chunks in the buffer
@@ -25,13 +25,21 @@ def handle_audio_chunk(audio_data):
 def handle_audio_stop():
     # Reset the buffer's pointer to the beginning
     audio_buffer.seek(0)
+    #process the audio to text
+    STT = STT()
+    text = STT.convertToText(audio_buffer.read())
+    
+    # send text through RL
+    rl_text = RL.adapt(rl_text)
 
+    # send text to asyncVLLM
+    llm.generate(prompt=rl_text)
     
 
     TTS = TTS()
     audio = TTS.convertToSpeech()
     # Emit the full audio back to the client
-    emit('playAudio', audio_buffer.read(), broadcast=True)
+    emit('playAudio', audio, broadcast=True)
 
     # Clear the buffer for the next recording session
     audio_buffer.truncate(0)
@@ -43,13 +51,7 @@ def handle_start_recording():
     audio_buffer.truncate(0)
     audio_buffer.seek(0)
 
-    #process the audio to text
-    STT = STT()
-    text = STT.convertToText(audio)
-    # send text through RL
-    text = RL.adapt(text)
-    # send text to asyncVLLM
-    LLM.generate(prompt=text)
+    
 
 
 
