@@ -1,0 +1,237 @@
+/* Base layout */
+.saved-chats {
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    color: white;
+  }
+  
+  .saved-chats h2 {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .saved-chats-content {
+    padding: 20px;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  /* Grid layout */
+  .saved-chats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Exactly 3 columns */
+    gap: 20px;
+    padding: 20px;
+  }
+  
+  /* Individual chat cards */
+  .saved-chat-card {
+    background-color: #3c3f47;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    aspect-ratio: 1; /* Makes each card square */
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .saved-chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #61dafb;
+  }
+  
+  .saved-chat-header h3 {
+    margin: 0;
+    color: #61dafb;
+    font-size: 0.9rem;
+  }
+  
+  /* Messages area */
+  .saved-chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    background-color: #282c34;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: #61dafb #3c3f47;
+  }
+  
+  .saved-chat-messages::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .saved-chat-messages::-webkit-scrollbar-thumb {
+    background: #61dafb;
+    border-radius: 5px;
+  }
+  
+  .saved-chat-message {
+    margin-bottom: 8px;
+    padding: 8px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+  }
+  
+  .saved-chat-message.you {
+    text-align: right;
+    background-color: rgba(97, 218, 251, 0.1);
+    color: #61dafb;
+  }
+  
+  .saved-chat-message.bot {
+    text-align: left;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  /* Card footer and buttons */
+  .saved-chat-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 10px;
+  }
+  
+  .view-btn, .delete-btn {
+    padding: 8px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    flex: 1;
+    font-size: 0.9rem;
+  }
+  
+  .view-btn {
+    background-color: #61dafb;
+    color: #282c34;
+  }
+  
+  .view-btn:hover {
+    background-color: #21a1f1;
+  }
+  
+  .delete-btn {
+    background-color: #dc3545;
+    color: white;
+  }
+  
+  .delete-btn:hover {
+    background-color: #c82333;
+  }
+  
+  /* Modal styles */
+  .chat-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .chat-modal-content {
+    background-color: #3c3f47;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 800px;
+    height: 80vh;
+    padding: 20px;
+    position: relative;
+  }
+  
+  .close-modal {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 5px;
+  }
+  
+  .close-modal:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  /* Message count indicator */
+  .message-count {
+    color: #61dafb;
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 5px;
+    background-color: rgba(97, 218, 251, 0.1);
+    border-radius: 5px;
+    margin-top: 5px;
+  }
+  
+  /* Loading and empty states */
+  .loading-state {
+    text-align: center;
+    padding: 40px;
+    font-size: 1.2rem;
+    color: white;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #61dafb;
+    font-size: 1.1rem;
+  }
+  
+  /* Navigation */
+  .nav-menu {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+  }
+  
+  .nav-link {
+    padding: 8px 16px;
+    border-radius: 5px;
+    background-color: #61dafb;
+    color: #282c34;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.2s;
+  }
+  
+  .nav-link:hover {
+    background-color: #21a1f1;
+  }
+  
+  /* Responsive design */
+  @media (max-width: 1024px) {
+    .saved-chats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .saved-chats-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .chat-modal-content {
+      width: 95%;
+      height: 90vh;
+      padding: 15px;
+    }
+  }
