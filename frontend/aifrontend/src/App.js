@@ -11,10 +11,11 @@ import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 const client = new DynamoDBClient({ 
   region: "us-east-1",
   credentials: {
-    accessKeyId: "AKIA3GMCHGGUVH2T3PFV",    // Replace with your actual access key
-    secretAccessKey: "9wDRA4GzkJSRItoRAI0GPhBU4uZfYlbNxkW/5YF1"  // Replace with your actual secret key
+    accessKeyId: "AKIA3GMCHGGUVH2T3PFV",
+    secretAccessKey: "9wDRA4GzkJSRItoRAI0GPhBU4uZfYlbNxkW/5YF1"
   }
 });
+
 const docClient = DynamoDBDocumentClient.from(client, {
   marshallOptions: {
     convertEmptyValues: true,
