@@ -3,9 +3,10 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #282c34;
+  background: linear-gradient(to bottom, #1e3c72, #2a5298); /* Blue gradient */
   color: white;
 }
+
 
 .App-header {
   font-size: calc(24px + 2vmin);
@@ -100,5 +101,36 @@
 }
 
 .App-chat-input button:hover {
+  background-color: #21a1f1;
+}
+
+.App-chat-input button:last-child {
+  background-color: #ffcc00;
+}
+
+.App-chat-input button:last-child:hover {
+  background-color: #ff9900;
+}
+
+.auth-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.auth-btn {
+  padding: 8px 16px;
+  border-radius: 5px;
+  border: none;
+  background-color: #61dafb;
+  color: #282c34;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.auth-btn:hover {
   background-color: #21a1f1;
 }
