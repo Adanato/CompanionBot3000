@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import SavedChats from './SavedChats';
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { Canvas } from '@react-three/fiber';
+import BotModel from './BotModel';
 
 // Initialize DynamoDB client outside of the component
 const client = new DynamoDBClient({ 
@@ -56,6 +58,7 @@ function ChatApp() {
   const [messages, setMessages] = useState([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isBotSpeaking, setIsBotSpeaking] = useState(false);
   const chatLogRef = useRef(null);
 
   const saveChat = async () => {
@@ -64,14 +67,14 @@ function ChatApp() {
 
     try {
       const chatData = {
-        userId: user.userId,  // String - as per your DynamoDB schema
-        chatId: Date.now().toString(),  // String - as per your DynamoDB schema
+        userId: user.userId,
+        chatId: Date.now().toString(),
         timestamp: new Date().toISOString(),
         messages: messages
       };
 
       const command = new PutCommand({
-        TableName: "ChatHistory",  // Updated to match your table name
+        TableName: "ChatHistory",
         Item: chatData
       });
 
@@ -104,7 +107,13 @@ function ChatApp() {
   }, [messages]);
 
   const startListening = () => {
-    const recognition = new window.webkitSpeechRecognition() || new window.SpeechRecognition();
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech Recognition is not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
@@ -117,6 +126,10 @@ function ChatApp() {
     const synth = window.speechSynthesis;
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
+    setIsBotSpeaking(true);
+    utterance.onend = () => {
+      setIsBotSpeaking(false);
+    };
     synth.speak(utterance);
   };
 
@@ -130,7 +143,18 @@ function ChatApp() {
         <h1>Companion Bot 3000</h1>
       </header>
       <div className="App-content">
-        <img src={botImage} alt="Bot" className="App-bot-image" />
+        {/* Replace the image with the Canvas containing the BotModel */}
+        <Canvas
+  className="App-bot-canvas"
+      camera={{
+        position: [0, 5, 75], // Move the camera farther back
+        fov: 50, // Increase the field of view
+      }}
+      >
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[0, 10, 5]} />
+      <BotModel isSpeaking={isBotSpeaking} />
+      </Canvas>
         <div className="App-chat">
           <div className="App-chat-log" ref={chatLogRef}>
             {messages.map((message, index) => (
