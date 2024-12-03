@@ -2,9 +2,9 @@ from flask import Flask
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from io import BytesIO
-from LLM import LLM
-
-# Custom classes
+from LLM import SupportChat
+from STT import SpeechToText
+from TTS import TextToSpeech
 
 app = Flask(__name__)
 CORS(app)
@@ -13,8 +13,10 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # Buffer to store audio chunks
 audio_buffer = BytesIO()
 
-#start model
-llm = LLM(model="meta-llama/Llama-3.1-8B")
+#start models
+chat = SupportChat(model="meta-llama/Llama-3.1-8B")
+speechConverter = SpeechToText()
+textConverter = TextToSpeech()
 
 @socketio.on('audio_chunk')
 def handle_audio_chunk(audio_data):
@@ -26,18 +28,16 @@ def handle_audio_stop():
     # Reset the buffer's pointer to the beginning
     audio_buffer.seek(0)
     #process the audio to text
-    STT = STT()
-    text = STT.convertToText(audio_buffer.read())
     
-    # send text through RL
-    rl_text = RL.adapt(rl_text)
-
-    # send text to asyncVLLM
-    llm.generate(prompt=rl_text)
+    user_text = speechConverter.convertToText(audio_buffer.read())
     
-
-    TTS = TTS()
-    audio = TTS.convertToSpeech()
+    # send text through RL  
+    #rl_text = RL.adapt(user_text)
+    
+    # send text to asyncVLLM and converse
+    support_text = chat.generate(prompt=user_text)
+    
+    audio = textConverter.convertToSpeech(response)
     # Emit the full audio back to the client
     emit('playAudio', audio, broadcast=True)
 

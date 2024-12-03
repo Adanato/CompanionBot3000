@@ -4,7 +4,7 @@ from datasets import load_dataset
 
 
 class SpeechToText:
-    def __init__(self, audio = None, model_id = "openai/whisper-large-v3"):
+    def __init__(self, audio_file_location = None, model_id = "openai/whisper-large-v3"):
 
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
         torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
@@ -29,7 +29,8 @@ class SpeechToText:
 
         dataset = load_dataset("distil-whisper/librispeech_long", "clean", split="validation")
         sample = dataset[0]["audio"]
-
+        # use this after testing
+        # result = pipe("audio.mp3")
         result = pipe(sample)
         print("SST output: " + result["text"])
         return result
