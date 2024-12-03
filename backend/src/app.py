@@ -1,4 +1,5 @@
-from flask import Flask, request, Response
+from flask import Flask
+from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from Models import GPTModel
 from LLM import SupportChat
@@ -6,43 +7,52 @@ from TTS import TextToSpeech
 
 app = Flask(__name__)
 CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Initialize the models
+# Initialize models
 chat = SupportChat(GPTModel(model="gpt-4o"))
 textConverter = TextToSpeech()
 
-@app.route('/text_and_audio_stream', methods=['POST'])
-def text_and_audio_stream():
+@socketio.on('connect')
+def handle_connect():
     """
-    Endpoint to return text in the initial part of the response and stream audio as a multipart response.
+    Handle client connection.
     """
-    try:
-        # Extract user text from request JSON
-        user_text = request.json.get('text', '')
-        if not user_text:
-            return {"error": "No text provided"}, 400
+    print("Client connected")
+    emit('connection_status', {"message": "Connection established"})
 
-        # Generate chat response
-        support_text = chat.generate(prompt=user_text)
+@socketio.on('disconnect')
+def handle_disconnect():
+    """
+    Handle client disconnection.
+    """
+    print("Client disconnected")
 
-        # Create generator for streaming audio and text
-        def generate_response():
-            # Yield the text response as part of the stream
-            yield f"--boundary\r\nContent-Type: application/json\r\n\r\n"
-            yield f'{{"text": "{support_text}"}}\r\n'
-            
-            # Yield the audio as a binary stream
-            yield f"--boundary\r\nContent-Type: audio/mpeg\r\n\r\n"
-            for audio_chunk in textConverter.streamSpeech(support_text):
-                yield audio_chunk
-            yield f"--boundary--\r\n"
+@socketio.on('send_text')
+def handle_text(data):
+    """
+    Handle incoming text and send back both text and audio.
+    """
+    # Extract user text
+    user_text = data.get("text", "")
+    if not user_text:
+        emit('error', {"error": "No text provided"})
+        return
 
-        return Response(
-            generate_response(),
-            mimetype="multipart/x-mixed-replace; boundary=boundary"
-        )
-    except Exception as e:
-        return {"error": str(e)}, 500
+    print(f"Received text: {user_text}")
+
+    # Generate response using chat model
+    support_text = chat.generate(prompt=user_text)
+
+    # Emit the generated text response
+    emit('text_response', {"text": support_text})
+
+    # Stream the generated audio response
+    for audio_chunk in textConverter.streamSpeech(support_text):
+        emit('audio_stream', audio_chunk)
+
+    # Notify client that audio streaming is complete
+    emit('audio_complete')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
