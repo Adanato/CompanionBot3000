@@ -2,57 +2,50 @@ from flask import Flask
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from Models import GPTModel
-from LLM import SupportChat
-from TTS import TextToSpeech
 
 app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
+chat = GPTModel(model="gpt-4o")
 
-# Initialize models
-chat = SupportChat(GPTModel(model="gpt-4o"))
-textConverter = TextToSpeech()
+def send_wav_file(filepath):
+    """Helper function to read and send WAV file"""
+    try:
+        with open(filepath, 'rb') as audio_file:
+            audio_data = audio_file.read()
+            emit('audio_response', audio_data)
+    except Exception as e:
+        print(f"Error reading audio file: {e}")
+        emit('error', {"error": "Failed to load audio file"})
 
 @socketio.on('connect')
 def handle_connect():
-    """
-    Handle client connection.
-    """
     print("Client connected")
-    emit('connection_status', {"message": "Connection established"})
+    emit('connection_status', {"message": "Connected"})
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    """
-    Handle client disconnection.
-    """
     print("Client disconnected")
 
 @socketio.on('send_text')
 def handle_text(data):
-    """
-    Handle incoming text and send back both text and audio.
-    """
-    # Extract user text
-    user_text = data.get("text", "")
-    if not user_text:
-        emit('error', {"error": "No text provided"})
-        return
+    try:
+        user_text = data.get("text", "")
+        if not user_text:
+            emit('error', {"error": "No text provided"})
+            return
 
-    print(f"Received text: {user_text}")
-
-    # Generate response using chat model
-    support_text = chat.generate(prompt=user_text)
-
-    # Emit the generated text response
-    emit('text_response', {"text": support_text})
-
-    # Stream the generated audio response
-    for audio_chunk in textConverter.streamSpeech(support_text):
-        emit('audio_stream', audio_chunk)
-
-    # Notify client that audio streaming is complete
-    emit('audio_complete')
+        print(f"Received text: {user_text}")
+        support_text = chat.generate(prompt=user_text)
+        emit('text_response', {"text": support_text})
+        
+        # Send audio file response
+        wav_filepath = "Chorus.wav"  # TEST
+        send_wav_file(wav_filepath)
+        
+    except Exception as e:
+        print(f"Error in handle_text: {e}")
+        emit('error', {"error": str(e)})
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)

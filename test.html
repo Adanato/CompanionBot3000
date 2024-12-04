@@ -14,6 +14,9 @@
         <button onclick="sendText()">Send</button>
     </div>
 
+    <h2>Connection Status</h2>
+    <p id="connectionStatus">Connecting...</p>
+
     <h2>Text Response</h2>
     <p id="textResponse">Awaiting response...</p>
 
@@ -22,16 +25,31 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.0/socket.io.js"></script>
     <script>
-        const socket = io.connect('http://localhost:5000'); // Replace with your server's address
+        const ENDPOINT = 'http://198.82.251.30:5000';
+        const socket = io(ENDPOINT, {
+            transports: ['websocket']
+        });
+
         const textInput = document.getElementById('textInput');
         const textResponse = document.getElementById('textResponse');
         const audioPlayback = document.getElementById('audioPlayback');
+        const connectionStatus = document.getElementById('connectionStatus');
 
-        let audioChunks = [];
+        // Connection handling
+        socket.on('connect', () => {
+            connectionStatus.textContent = 'Connected to server';
+            connectionStatus.style.color = 'green';
+        });
 
-        // Handle connection status
-        socket.on('connection_status', (data) => {
-            console.log(data.message);
+        socket.on('disconnect', () => {
+            connectionStatus.textContent = 'Disconnected from server';
+            connectionStatus.style.color = 'red';
+        });
+
+        socket.on('connect_error', (error) => {
+            connectionStatus.textContent = `Connection error: ${error.message}`;
+            connectionStatus.style.color = 'red';
+            console.error('Connection error:', error);
         });
 
         // Handle text response
@@ -39,34 +57,41 @@
             textResponse.textContent = data.text;
         });
 
-        // Collect audio chunks
-        socket.on('audio_stream', (audioChunk) => {
-            audioChunks.push(audioChunk);
-        });
-
-        // Handle audio completion
-        socket.on('audio_complete', () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm; codecs=opus' });
-            const audioUrl = URL.createObjectURL(audioBlob);
-            audioPlayback.src = audioUrl;
-            audioPlayback.play();
-            audioChunks = []; // Clear for the next session
+        // Handle audio response
+        socket.on('audio_response', (audioData) => {
+            const blob = new Blob([audioData], { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
+            audioPlayback.src = url;
+            audioPlayback.play().catch(error => {
+                console.error('Audio playback error:', error);
+            });
         });
 
         // Handle errors
         socket.on('error', (data) => {
-            console.error(data.error);
+            console.error('Server error:', data.error);
+            textResponse.textContent = `Error: ${data.error}`;
+            textResponse.style.color = 'red';
         });
 
-        // Send text input to server
+        // Send text to server
         function sendText() {
             const text = textInput.value.trim();
             if (!text) {
                 alert("Please enter some text!");
                 return;
             }
+            textResponse.textContent = 'Processing...';
             socket.emit('send_text', { text: text });
         }
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            socket.close();
+            if (audioPlayback.src) {
+                URL.revokeObjectURL(audioPlayback.src);
+            }
+        });
     </script>
 </body>
 </html>
