@@ -1,5 +1,6 @@
+// App.js
+
 import './App.css';
-import botImage from './bot.jpg';
 import { useState, useEffect, useRef } from 'react';
 import { AuthProvider, useAuthInfo, useRedirectFunctions } from "@propelauth/react";
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
@@ -8,6 +9,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { Canvas } from '@react-three/fiber';
 import BotModel from './BotModel';
+import io from 'socket.io-client';
 
 // Initialize DynamoDB client outside of the component
 const client = new DynamoDBClient({ 
@@ -60,6 +62,131 @@ function ChatApp() {
   const [isSaving, setIsSaving] = useState(false);
   const [isBotSpeaking, setIsBotSpeaking] = useState(false);
   const chatLogRef = useRef(null);
+  const socket = useRef(null);
+  const utteranceRef = useRef(null); // Ref to store the speech utterance
+
+  useEffect(() => {
+    // Initialize the WebSocket connection
+    socket.current = io('http://100.110.129.91:5000', {
+      transports: ['websocket'],
+    });
+
+    // Handle connection events
+    socket.current.on('connect', () => {
+      console.log('Connected to WebSocket server');
+    });
+
+    socket.current.on('disconnect', () => {
+      console.log('Disconnected from WebSocket server');
+    });
+
+    socket.current.on('connect_error', (error) => {
+      console.error('WebSocket connection error:', error);
+    });
+
+    // Handle text responses from the server
+    socket.current.on('text_response', (data) => {
+      const botResponse = data.text;
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { sender: 'Bot', text: botResponse },
+      ]);
+
+      // Use Text-to-Speech to speak the bot's response
+      speak(botResponse);
+    });
+
+    // Handle audio responses from the server
+    socket.current.on('audio_response', (audioData) => {
+      const blob = new Blob([audioData], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      setIsBotSpeaking(true);
+      audio.play().catch((error) => {
+        console.error('Audio playback error:', error);
+      });
+      audio.onended = () => {
+        setIsBotSpeaking(false);
+        URL.revokeObjectURL(url); // Clean up the object URL
+      };
+    });
+
+    // Handle errors
+    socket.current.on('error', (data) => {
+      console.error('WebSocket server error:', data.error);
+    });
+
+    // Cleanup on component unmount
+    return () => {
+      if (socket.current) {
+        socket.current.disconnect();
+      }
+    };
+  }, []);
+
+  const handleSendMessage = () => {
+    if (currentMessage.trim() === '') return;
+
+    const newMessages = [...messages, { sender: 'You', text: currentMessage }];
+
+    setMessages(newMessages);
+    setCurrentMessage('');
+
+    if (socket.current && socket.current.connected) {
+      socket.current.emit('send_text', { text: currentMessage });
+    } else {
+      console.error('WebSocket is not connected');
+    }
+  };
+
+  const startListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech Recognition is not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setCurrentMessage(transcript);
+    };
+    recognition.start();
+  };
+
+  const speak = (text) => {
+    // Use Text-to-Speech to speak the bot's response
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    setIsBotSpeaking(true);
+    utterance.onend = () => {
+      setIsBotSpeaking(false);
+      utteranceRef.current = null;
+    };
+    utterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event.error);
+      setIsBotSpeaking(false);
+      utteranceRef.current = null;
+    };
+    utteranceRef.current = utterance;
+    synth.speak(utterance);
+  };
+
+  const stopSpeaking = () => {
+    if (utteranceRef.current) {
+      window.speechSynthesis.cancel();
+      setIsBotSpeaking(false);
+      utteranceRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    if (chatLogRef.current) {
+      chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const saveChat = async () => {
     if (!isLoggedIn || messages.length === 0) return;
@@ -88,51 +215,6 @@ function ChatApp() {
     }
   };
 
-  const handleSendMessage = () => {
-    if (currentMessage.trim() === '') return;
-
-    const newMessages = [...messages, { sender: 'You', text: currentMessage }];
-    const botResponse = `You said: "${currentMessage}"`;
-    newMessages.push({ sender: 'Bot', text: botResponse });
-
-    setMessages(newMessages);
-    setCurrentMessage('');
-    speak(botResponse);
-  };
-
-  useEffect(() => {
-    if (chatLogRef.current) {
-      chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  const startListening = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Speech Recognition is not supported in this browser.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setCurrentMessage(transcript);
-    };
-    recognition.start();
-  };
-
-  const speak = (text) => {
-    const synth = window.speechSynthesis;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    setIsBotSpeaking(true);
-    utterance.onend = () => {
-      setIsBotSpeaking(false);
-    };
-    synth.speak(utterance);
-  };
-
   return (
     <div className="App">
       <AuthButton />
@@ -143,18 +225,17 @@ function ChatApp() {
         <h1>Companion Bot 3000</h1>
       </header>
       <div className="App-content">
-        {/* Replace the image with the Canvas containing the BotModel */}
         <Canvas
-  className="App-bot-canvas"
-      camera={{
-        position: [0, 5, 75], // Move the camera farther back
-        fov: 50, // Increase the field of view
-      }}
-      >
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[0, 10, 5]} />
-      <BotModel isSpeaking={isBotSpeaking} />
-      </Canvas>
+          className="App-bot-canvas"
+          camera={{
+            position: [0, 5, 75],
+            fov: 50,
+          }}
+        >
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[0, 10, 5]} />
+          <BotModel isSpeaking={isBotSpeaking} />
+        </Canvas>
         <div className="App-chat">
           <div className="App-chat-log" ref={chatLogRef}>
             {messages.map((message, index) => (
@@ -181,6 +262,9 @@ function ChatApp() {
               />
               <button onClick={handleSendMessage}>Send</button>
               <button onClick={startListening}>🎤 Speak</button>
+              {isBotSpeaking && (
+                <button onClick={stopSpeaking} className="stop-button">🛑 Stop</button>
+              )}
             </div>
             {isLoggedIn && messages.length > 0 && (
               <button 

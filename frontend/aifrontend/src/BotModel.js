@@ -59,7 +59,7 @@ function BotModel({ isSpeaking }) {
     currentModel ? (
       <primitive
         object={currentModel}
-        position={[0, -3, 0]} // Keep consistent position
+        position={[0, -12, 0]} // Keep consistent position
         scale={[0.2, 0.2, 0.2]} // Keep consistent scale
       />
     ) : null
