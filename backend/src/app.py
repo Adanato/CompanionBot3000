@@ -40,8 +40,8 @@ def handle_text(data):
         emit('text_response', {"text": support_text})
         
         # Send audio file response
-        wav_filepath = "Chorus.wav"  # TEST
-        send_wav_file(wav_filepath)
+        # wav_filepath = "Chorus.wav"  # TEST
+        # send_wav_file(wav_filepath)
         
     except Exception as e:
         print(f"Error in handle_text: {e}")
