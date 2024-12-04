@@ -6,8 +6,17 @@ from Models import GPTModel
 app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
-
 chat = GPTModel(model="gpt-4o")
+
+def send_wav_file(filepath):
+    """Helper function to read and send WAV file"""
+    try:
+        with open(filepath, 'rb') as audio_file:
+            audio_data = audio_file.read()
+            emit('audio_response', audio_data)
+    except Exception as e:
+        print(f"Error reading audio file: {e}")
+        emit('error', {"error": "Failed to load audio file"})
 
 @socketio.on('connect')
 def handle_connect():
@@ -29,7 +38,10 @@ def handle_text(data):
         print(f"Received text: {user_text}")
         support_text = chat.generate(prompt=user_text)
         emit('text_response', {"text": support_text})
-        emit('audio_complete')  # For now, just send completion without audio
+        
+        # Send audio file response
+        wav_filepath = "Chorus.wav"  # TEST
+        send_wav_file(wav_filepath)
         
     except Exception as e:
         print(f"Error in handle_text: {e}")
