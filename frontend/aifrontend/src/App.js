@@ -15,8 +15,8 @@ import io from 'socket.io-client';
 const client = new DynamoDBClient({ 
   region: "us-east-1",
   credentials: {
-    accessKeyId: "AKIA3GMCHGGUVH2T3PFV",
-    secretAccessKey: "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"
+    accessKeyId: "",
+    secretAccessKey: ""
   }
 });
 
@@ -313,7 +313,7 @@ function ChatApp() {
 function AppWithRouter() {
   return (
     <BrowserRouter>
-      <AuthProvider authUrl="https://4847605902.propelauthtest.com">
+      <AuthProvider authUrl="">
         <Routes>
           <Route path="/" element={<ChatApp />} />
           <Route path="/saved-chats" element={<SavedChats />} />
