@@ -64,7 +64,8 @@ function ChatApp() {
   const chatLogRef = useRef(null);
   const socket = useRef(null);
   const utteranceRef = useRef(null); // Ref to store the speech utterance
-
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef(null);
   useEffect(() => {
     // Initialize the WebSocket connection
     socket.current = io('http://198.82.251.30:5000', {
@@ -93,21 +94,34 @@ function ChatApp() {
       ]);
 
       // Use Text-to-Speech to speak the bot's response
-      speak(botResponse);
+      // speak(botResponse);
     });
 
-    // Handle audio responses from the server
+    
+
+    // Modify the audio_response handler
     socket.current.on('audio_response', (audioData) => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        URL.revokeObjectURL(audioRef.current.src);
+      }
+      
       const blob = new Blob([audioData], { type: 'audio/wav' });
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
+      audioRef.current = audio;
       setIsBotSpeaking(true);
+      setIsPlaying(true);
+      
       audio.play().catch((error) => {
         console.error('Audio playback error:', error);
       });
+      
       audio.onended = () => {
         setIsBotSpeaking(false);
-        URL.revokeObjectURL(url); // Clean up the object URL
+        setIsPlaying(false);
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
       };
     });
 
@@ -175,12 +189,26 @@ function ChatApp() {
   };
 
   const stopSpeaking = () => {
+    // Stop TTS
     if (utteranceRef.current) {
       window.speechSynthesis.cancel();
-      setIsBotSpeaking(false);
-      utteranceRef.current = null;
     }
+    
+    // Stop server audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      if (audioRef.current.src) {
+        URL.revokeObjectURL(audioRef.current.src);
+      }
+      audioRef.current = null;
+    }
+    
+    // Reset all speaking/playing states
+    setIsBotSpeaking(false);
+    setIsPlaying(false);
+    utteranceRef.current = null;
   };
+  
 
   useEffect(() => {
     if (chatLogRef.current) {

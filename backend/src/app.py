@@ -37,12 +37,12 @@ def handle_text(data):
             return
 
         print(f"Received text: {user_text}")
-        support_text = chat.generate(prompt=user_text)
+        support_text = system.process_user_message(user_text)
         emit('text_response', {"text": support_text})
         
-        # Send audio file response
-        # wav_filepath = "Chorus.wav"  # TEST
-        # send_wav_file(wav_filepath)
+        # Send audio file tts
+        wav_filepath = tts.convertToSpeech(support_text)
+        send_wav_file(wav_filepath)
         
     except Exception as e:
         print(f"Error in handle_text: {e}")
