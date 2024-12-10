@@ -11,6 +11,7 @@ class TextAnalyzer:
         self.emotion_classifier = pipeline("text-classification", 
                                         model="bhadresh-savani/distilbert-base-uncased-emotion",
                                         return_all_scores=True)
+
         nltk.download('punkt')
         nltk.download('averaged_perceptron_tagger')
 
@@ -18,7 +19,6 @@ class TextAnalyzer:
         return {
             'sentiment': self.extract_sentiment(text),
             'word_count': self.extract_word_count(text),
-            'intent': self.extract_intent(text),
             'emotion': self.extract_emotion(text)
         }
 

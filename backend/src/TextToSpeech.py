@@ -1,13 +1,18 @@
 import torch
-from TTS.api import TTS
+from melo.api import TTS
+import nltk
+nltk.download('averaged_perceptron_tagger_eng')
 
 class TextToSpeech:
-    def __init__(self, model="tts_models/multilingual/multi-dataset/xtts_v2"):
+    def __init__(self):
         # Get device
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
         # Init TTS
-        self.tts = TTS(model_name="tts_models/de/thorsten/tacotron2-DDC", progress_bar=False).to(device)
+        self.model = TTS(language='EN', device=device)
 
     def convertToSpeech(self, text):
-        #returns audio or file location
-        return self.tts.tts(text=text, speaker_wav="my/cloning/audio.wav", language="en")
+        speaker_ids = self.model.hps.data.spk2id
+        # American accent
+        output_path = './temp/out.wav'
+        self.model.tts_to_file(text, speaker_ids['EN-BR'], output_path, speed=1)
+        return output_path
