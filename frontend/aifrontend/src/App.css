@@ -5,7 +5,7 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(to bottom, #2c2c2c, #3f3f3f);
+  background: linear-gradient(to bottom, #24272e, #24272e);
   color: white;
 }
 
