@@ -6,8 +6,8 @@ class TextToSpeech:
         # Get device
         device = "cuda" if torch.cuda.is_available() else "cpu"
         # Init TTS
-        self.tts = TTS(model).to(device)
+        self.tts = TTS(model_name="tts_models/de/thorsten/tacotron2-DDC", progress_bar=False).to(device)
 
     def convertToSpeech(self, text):
         #returns audio or file location
-        return self.tts.tts(text="Hello world!", speaker_wav="my/cloning/audio.wav", language="en")
+        return self.tts.tts(text=text, speaker_wav="my/cloning/audio.wav", language="en")

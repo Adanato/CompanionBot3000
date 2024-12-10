@@ -2,14 +2,15 @@ from flask import Flask
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from Models import GPTModel
-
+from Support import MentalHealthModel
+from TextToSpeech import TextToSpeech
 app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 chat = GPTModel(model="gpt-4o")
-
+system = MentalHealthModel(chat)
+tts = TextToSpeech
 def send_wav_file(filepath):
-    """Helper function to read and send WAV file"""
     try:
         with open(filepath, 'rb') as audio_file:
             audio_data = audio_file.read()
