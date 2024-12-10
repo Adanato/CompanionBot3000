@@ -67,7 +67,7 @@ function ChatApp() {
 
   useEffect(() => {
     // Initialize the WebSocket connection
-    socket.current = io('http://100.110.129.91:5000', {
+    socket.current = io('http://198.82.251.30:5000', {
       transports: ['websocket'],
     });
 

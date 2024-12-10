@@ -9,7 +9,7 @@ CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 chat = GPTModel(model="gpt-4o")
 system = MentalHealthModel(chat)
-tts = TextToSpeech
+tts = TextToSpeech()
 def send_wav_file(filepath):
     try:
         with open(filepath, 'rb') as audio_file:
